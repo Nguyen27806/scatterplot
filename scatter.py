@@ -1,129 +1,90 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 
-
-st.set_page_config(
-    page_title="Career Path Sunburst",
-    layout="wide",
-    page_icon="🌞"
-)
-st.title("🌞 Career Path Sunburst")
-
-
+# Load dữ liệu
 @st.cache_data
 def load_data():
-    return pd.read_excel("education_career_success.xlsx", sheet_name=0)
+    return pd.read_csv("education_career_success.csv")
 
 df = load_data()
 
-
-def categorize_salary(salary):
-    if salary < 30000:
-        return '<30K'
-    elif salary < 50000:
-        return '30K–50K'
-    elif salary < 70000:
-        return '50K–70K'
-    else:
-        return '70K+'
-
-df['Salary_Group'] = df['Starting_Salary'].apply(categorize_salary)
-
-
-sunburst_data = df.groupby(['Entrepreneurship', 'Field_of_Study', 'Salary_Group']).size().reset_index(name='Count')
-total_count = sunburst_data['Count'].sum()
-sunburst_data['Percentage'] = (sunburst_data['Count'] / total_count * 100).round(2)
-
-
-ent_totals = sunburst_data.groupby('Entrepreneurship')['Count'].sum()
-sunburst_data['Ent_Label'] = sunburst_data['Entrepreneurship'].map(
-    lambda x: f"{x}<br>{round(ent_totals[x] / total_count * 100, 2)}%"
+# Tính trung bình Work-Life Balance theo Job Level và Years_to_Promotion
+avg_balance = (
+    df.groupby(['Current_Job_Level', 'Years_to_Promotion'])['Work_Life_Balance']
+    .mean()
+    .reset_index()
 )
 
-field_totals = sunburst_data.groupby(['Entrepreneurship', 'Field_of_Study'])['Count'].sum()
-sunburst_data['Field_Label'] = sunburst_data.apply(
-    lambda row: f"{row['Field_of_Study']}<br>{round(field_totals[(row['Entrepreneurship'], row['Field_of_Study'])] / total_count * 100, 2)}%",
-    axis=1
+# Sắp xếp thứ tự cấp bậc công việc
+job_levels_order = ['Entry', 'Mid', 'Senior', 'Executive']
+avg_balance['Current_Job_Level'] = pd.Categorical(
+    avg_balance['Current_Job_Level'], categories=job_levels_order, ordered=True
 )
 
-sunburst_data['Salary_Label'] = sunburst_data['Salary_Group'] + '<br>' + sunburst_data['Percentage'].astype(str) + '%'
-sunburst_data['Ent_Field'] = sunburst_data['Entrepreneurship'] + " - " + sunburst_data['Field_of_Study']
+# Sidebar chọn cấp bậc
+selected_levels = st.sidebar.multiselect(
+    "Select Job Levels to Display",
+    options=job_levels_order + ["All"],
+    default=["All"]
+)
 
+if "All" in selected_levels or not selected_levels:
+    filtered_data = avg_balance
+else:
+    filtered_data = avg_balance[avg_balance["Current_Job_Level"].isin(selected_levels)]
 
-yes_colors = {
-    'Engineering': '#aedea7',
-    'Business': '#dbf1d5',
-    'Arts': '#0c7734',
-    'Computer Science': '#73c375',
-    'Medicine': '#00441b',
-    'Law': '#f7fcf5',
-    'Mathematics': '#37a055'
+# Tạo biểu đồ bằng go.Figure
+fig = go.Figure()
+
+colors = {
+    "Entry": "#1f77b4",      # blue
+    "Mid": "#ff7f0e",        # orange
+    "Senior": "#2ca02c",     # green
+    "Executive": "#d62728"   # red
 }
 
-no_colors = {
-    'Engineering': '#005b96',
-    'Business': '#03396c',
-    'Arts': '#009ac7',
-    'Computer Science': '#8ed2ed',
-    'Medicine': '#b3cde0',
-    'Law': '#5dc4e1',
-    'Mathematics': '#0a70a9'
-}
+# Thêm từng trace cho mỗi Job Level
+for level in job_levels_order:
+    if "All" in selected_levels or level in selected_levels:
+        data_level = filtered_data[filtered_data["Current_Job_Level"] == level]
+        fig.add_trace(go.Scatter(
+            x=data_level["Years_to_Promotion"],
+            y=data_level["Work_Life_Balance"],
+            mode="lines+markers",
+            name=level,
+            line=dict(color=colors[level]),
+            hovertemplate=f"%{{y:.2f}}"  # chỉ hiện giá trị, tên & màu trace tự hiển thị theo format 'x unified'
+        ))
 
-
-color_map = {}
-for field, color in yes_colors.items():
-    color_map[f"Yes - {field}"] = color
-for field, color in no_colors.items():
-    color_map[f"No - {field}"] = color
-
-color_map['Yes'] = '#ffd16a'
-color_map['No'] = '#ffd16a'
-
-
-fig = px.sunburst(
-    sunburst_data,
-    path=['Ent_Label', 'Field_Label', 'Salary_Label'],
-    values='Count',
-    color='Ent_Field',
-    color_discrete_map=color_map,
-    custom_data=['Percentage'],
-    title='Career Path Insights: Education, Salary & Entrepreneurship'
-)
-
-fig.update_traces(
-    insidetextorientation='radial',
-    maxdepth=2,
-    branchvalues="total",
-    textinfo='label+text',
-    hovertemplate=
-            "<b>%{label}</b><br>" +
-            "Value: %{value}<br>" 
-)
-
+# Cấu hình layout
 fig.update_layout(
-    width=500,
-    height=500,
-    margin=dict(t=50, l=0, r=0, b=0)
+    title="Average Work-Life Balance by Years to Promotion",
+    xaxis_title="Years to Promotion",
+    yaxis_title="Average Work-Life Balance",
+    height=600,
+    width=900,
+    title_x=0.5,
+    legend_title_text="Job Level",
+    hovermode="x unified",  # Tooltip gom nhóm & hiển thị line màu như ảnh mẫu
+    xaxis=dict(
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        spikedash="dot",
+        spikethickness=1,
+        spikecolor="gray"
+    ),
+    yaxis=dict(
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        spikedash="dot",
+        spikethickness=1,
+        spikecolor="gray"
+    )
 )
 
-
-col1, col2 = st.columns([3, 1])
-
-with col1:
-    st.plotly_chart(fig, use_container_width=True)
-
-with col2:
-    st.markdown("### 💡 How to use")
-    st.markdown(
-        """
-- The chart displays all three levels:  
-    - *Entrepreneurship* (inner ring)  
-    - *Field of Study* (middle ring)  
-    - *Salary Group* (outer ring)  
-- All labels include their percentage share (e.g., _Engineering (20.1%)_)  
-- Click on any segment to zoom in and explore deeper insights.
-        """
-    )
+# Hiển thị biểu đồ
+st.plotly_chart(fig, use_container_width=True)
 
