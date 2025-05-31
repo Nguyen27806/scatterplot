@@ -1,47 +1,129 @@
 import streamlit as st
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+import plotly.express as px
 
-st.set_page_config(page_title="GPA vs Salary", layout="centered")
-st.title("🎓 University GPA vs. Starting Salary")
 
-# Upload file
-uploaded_file = st.file_uploader("📂 Upload your Excel file", type=["xlsx"])
+st.set_page_config(
+    page_title="Career Path Sunburst",
+    layout="wide",
+    page_icon="🌞"
+)
+st.title("🌞 Career Path Sunburst")
 
-if uploaded_file:
-    # Load Excel
-    df = pd.read_excel(uploaded_file, sheet_name="education_career_success")
 
-    # Group GPA into categories
-    gpa_bins = [2.0, 2.5, 3.0, 3.5, 4.0]
-    gpa_labels = ["2.0–2.5", "2.5–3.0", "3.0–3.5", "3.5–4.0"]
-    df["GPA_Group"] = pd.cut(df["University_GPA"], bins=gpa_bins, labels=gpa_labels, include_lowest=True)
+@st.cache_data
+def load_data():
+    return pd.read_excel("education_career_success.xlsx", sheet_name=0)
 
-    # GPA filter with "All"
-    gpa_filter_options = ["All"] + gpa_labels
-    selected_gpa_group = st.selectbox("🎯 Select GPA Group", options=gpa_filter_options)
+df = load_data()
 
-    # Salary slider
-    min_salary = int(df["Starting_Salary"].min())
-    max_salary = int(df["Starting_Salary"].max())
-    salary_range = st.slider("💰 Select Starting Salary Range", min_value=min_salary, max_value=max_salary,
-                             value=(min_salary, max_salary), step=1000)
 
-    # Filter data
-    filtered_df = df[(df["Starting_Salary"] >= salary_range[0]) & (df["Starting_Salary"] <= salary_range[1])]
-    if selected_gpa_group != "All":
-        filtered_df = filtered_df[filtered_df["GPA_Group"] == selected_gpa_group]
+def categorize_salary(salary):
+    if salary < 30000:
+        return '<30K'
+    elif salary < 50000:
+        return '30K–50K'
+    elif salary < 70000:
+        return '50K–70K'
+    else:
+        return '70K+'
 
-    # Plot
-    st.subheader("📈 Dot Chart")
-    fig, ax = plt.subplots(figsize=(8, 6))
-    sns.regplot(x='University_GPA', y='Starting_Salary', data=filtered_df, ax=ax, scatter_kws={'alpha': 0.7})
-    ax.set_title('University GPA vs. Starting Salary')
-    ax.set_xlabel('University GPA')
-    ax.set_ylabel('Starting Salary')
-    ax.grid(True)
-    st.pyplot(fig)
+df['Salary_Group'] = df['Starting_Salary'].apply(categorize_salary)
 
-else:
-    st.warning("⚠️ Please upload a valid Excel file with a sheet named 'education_career_success'.")
+
+sunburst_data = df.groupby(['Entrepreneurship', 'Field_of_Study', 'Salary_Group']).size().reset_index(name='Count')
+total_count = sunburst_data['Count'].sum()
+sunburst_data['Percentage'] = (sunburst_data['Count'] / total_count * 100).round(2)
+
+
+ent_totals = sunburst_data.groupby('Entrepreneurship')['Count'].sum()
+sunburst_data['Ent_Label'] = sunburst_data['Entrepreneurship'].map(
+    lambda x: f"{x}<br>{round(ent_totals[x] / total_count * 100, 2)}%"
+)
+
+field_totals = sunburst_data.groupby(['Entrepreneurship', 'Field_of_Study'])['Count'].sum()
+sunburst_data['Field_Label'] = sunburst_data.apply(
+    lambda row: f"{row['Field_of_Study']}<br>{round(field_totals[(row['Entrepreneurship'], row['Field_of_Study'])] / total_count * 100, 2)}%",
+    axis=1
+)
+
+sunburst_data['Salary_Label'] = sunburst_data['Salary_Group'] + '<br>' + sunburst_data['Percentage'].astype(str) + '%'
+sunburst_data['Ent_Field'] = sunburst_data['Entrepreneurship'] + " - " + sunburst_data['Field_of_Study']
+
+
+yes_colors = {
+    'Engineering': '#aedea7',
+    'Business': '#dbf1d5',
+    'Arts': '#0c7734',
+    'Computer Science': '#73c375',
+    'Medicine': '#00441b',
+    'Law': '#f7fcf5',
+    'Mathematics': '#37a055'
+}
+
+no_colors = {
+    'Engineering': '#005b96',
+    'Business': '#03396c',
+    'Arts': '#009ac7',
+    'Computer Science': '#8ed2ed',
+    'Medicine': '#b3cde0',
+    'Law': '#5dc4e1',
+    'Mathematics': '#0a70a9'
+}
+
+
+color_map = {}
+for field, color in yes_colors.items():
+    color_map[f"Yes - {field}"] = color
+for field, color in no_colors.items():
+    color_map[f"No - {field}"] = color
+
+color_map['Yes'] = '#ffd16a'
+color_map['No'] = '#ffd16a'
+
+
+fig = px.sunburst(
+    sunburst_data,
+    path=['Ent_Label', 'Field_Label', 'Salary_Label'],
+    values='Count',
+    color='Ent_Field',
+    color_discrete_map=color_map,
+    custom_data=['Percentage'],
+    title='Career Path Insights: Education, Salary & Entrepreneurship'
+)
+
+fig.update_traces(
+    insidetextorientation='radial',
+    maxdepth=2,
+    branchvalues="total",
+    textinfo='label+text',
+    hovertemplate=
+            "<b>%{label}</b><br>" +
+            "Value: %{value}<br>" 
+)
+
+fig.update_layout(
+    width=500,
+    height=500,
+    margin=dict(t=50, l=0, r=0, b=0)
+)
+
+
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.plotly_chart(fig, use_container_width=True)
+
+with col2:
+    st.markdown("### 💡 How to use")
+    st.markdown(
+        """
+- The chart displays all three levels:  
+    - *Entrepreneurship* (inner ring)  
+    - *Field of Study* (middle ring)  
+    - *Salary Group* (outer ring)  
+- All labels include their percentage share (e.g., _Engineering (20.1%)_)  
+- Click on any segment to zoom in and explore deeper insights.
+        """
+    )
+
