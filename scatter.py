@@ -1,51 +1,31 @@
-import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Set up page
-st.set_page_config(page_title="GPA Group Slicer", layout="centered")
-st.title("🎓 GPA Group Slicer vs. Starting Salary")
+# Load the dataset
+file_path = "/mnt/data/education_career_success.xlsx"
+df = pd.read_excel(file_path, sheet_name="education_career_success")
 
-# Upload file
-uploaded_file = st.file_uploader("📂 Upload your Excel file", type=["xlsx"])
+# Group GPA
+gpa_bins = [2.0, 2.5, 3.0, 3.5, 4.0]
+gpa_labels = ["2.0–2.5", "2.5–3.0", "3.0–3.5", "3.5–4.0"]
+df["GPA_Group"] = pd.cut(df["University_GPA"], bins=gpa_bins, labels=gpa_labels, include_lowest=True)
 
-if uploaded_file:
-    # Load data
-    df = pd.read_excel(uploaded_file, sheet_name="education_career_success")
+# Group Starting Salary
+salary_bins = [0, 30000, 50000, 70000, 90000, float("inf")]
+salary_labels = ["<30K", "30K–50K", "50K–70K", "70K–90K", ">90K"]
+df["Salary_Group"] = pd.cut(df["Starting_Salary"], bins=salary_bins, labels=salary_labels, include_lowest=True)
 
-    # Group GPA
-    gpa_bins = [2.0, 2.5, 3.0, 3.5, 4.0]
-    gpa_labels = ["2.0–2.5", "2.5–3.0", "3.0–3.5", "3.5–4.0"]
-    df["GPA_Group"] = pd.cut(df["University_GPA"], bins=gpa_bins, labels=gpa_labels, include_lowest=True)
+# Count the combinations
+group_counts = df.groupby(["GPA_Group", "Salary_Group"]).size().reset_index(name="Count")
 
-    # GPA Group slicer
-    selected_group = st.selectbox("🎯 Select GPA Group", options=gpa_labels)
+# Plot as heatmap
+pivot_table = group_counts.pivot(index="Salary_Group", columns="GPA_Group", values="Count")
 
-    # Filter data based on selected group
-    filtered_df = df[df["GPA_Group"] == selected_group]
-
-    # Plot
-    st.subheader(f"📈 Starting Salary for GPA Group: {selected_group}")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.stripplot(
-        x="GPA_Group",
-        y="Starting_Salary",
-        data=filtered_df,
-        jitter=True,
-        alpha=0.7,
-        palette="Set2",
-        ax=ax
-    )
-    ax.set_xlabel("GPA Group")
-    ax.set_ylabel("Starting Salary")
-    ax.set_title("")  # No title
-    ax.grid(True)
-    st.pyplot(fig)
-
-    # Optional: Show table
-    with st.expander("📄 View Filtered Data"):
-        st.dataframe(filtered_df[["University_GPA", "Starting_Salary", "GPA_Group"]])
-
-else:
-    st.info("👈 Upload your Excel file with sheet `education_career_success`.")
+plt.figure(figsize=(8, 6))
+sns.heatmap(pivot_table, annot=True, fmt="d", cmap="YlGnBu", cbar=False)
+plt.xlabel("GPA Group")
+plt.ylabel("Salary Group")
+plt.title("Heatmap: Number of Students by GPA and Salary Group")
+plt.tight_layout()
+plt.show()
