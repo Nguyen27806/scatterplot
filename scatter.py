@@ -34,7 +34,7 @@ if uploaded_file:
         filtered_df = filtered_df[filtered_df["GPA_Group"] == selected_gpa_group]
 
     # Plot
-    st.subheader("📈 Dot Chart")
+    st.subheader("📈 Scatter Chart")
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.regplot(x='University_GPA', y='Starting_Salary', data=filtered_df, ax=ax, scatter_kws={'alpha': 0.7})
     ax.set_title('University GPA vs. Starting Salary')
