@@ -16,16 +16,14 @@ salary_bins = [0, 30000, 50000, 70000, 90000, float("inf")]
 salary_labels = ["<30K", "30K–50K", "50K–70K", "70K–90K", ">90K"]
 df["Salary_Group"] = pd.cut(df["Starting_Salary"], bins=salary_bins, labels=salary_labels, include_lowest=True)
 
-# Count the combinations
-group_counts = df.groupby(["GPA_Group", "Salary_Group"]).size().reset_index(name="Count")
-
-# Plot as heatmap
-pivot_table = group_counts.pivot(index="Salary_Group", columns="GPA_Group", values="Count")
-
-plt.figure(figsize=(8, 6))
-sns.heatmap(pivot_table, annot=True, fmt="d", cmap="YlGnBu", cbar=False)
+# Plot: GPA_Group on x-axis, color by Salary_Group
+plt.figure(figsize=(10, 6))
+sns.stripplot(x="GPA_Group", y="Starting_Salary", hue="Salary_Group", data=df,
+              dodge=True, jitter=True, palette="Set2", alpha=0.7)
 plt.xlabel("GPA Group")
-plt.ylabel("Salary Group")
-plt.title("Heatmap: Number of Students by GPA and Salary Group")
+plt.ylabel("Starting Salary")
+plt.title("")  # No title
+plt.grid(True)
+plt.legend(title="Salary Group", bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
