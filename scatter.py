@@ -71,7 +71,6 @@ with st.expander("🌞 Career Path Sunburst", expanded=True):
     for field, color in yes_colors.items():
        'Yes<br>{:.2f}%'.format(round(ent_totals['Yes'] / total_count * 100, 2)): '#FFA500',
     'No<br>{:.2f}%'.format(round(ent_totals['No'] / total_count * 100, 2)): '#FFA700'
-}
 
 
     fig1 = px.sunburst(
