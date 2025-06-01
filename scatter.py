@@ -28,20 +28,32 @@ if uploaded_file:
     if selected_gpa != "All":
         filtered_df = filtered_df[filtered_df["GPA_Group"] == selected_gpa]
 
-    # Plot with colors by GPA group
+    # Marker map per GPA group
+    marker_map = {
+        "2.0–2.5": "o",   # circle
+        "2.5–3.0": "s",   # square
+        "3.0–3.5": "D",   # diamond
+        "3.5–4.0": "^",   # triangle
+    }
+
+    # Plot with custom markers
     fig, ax = plt.subplots(figsize=(8, 6))
-    sns.scatterplot(
-        data=filtered_df,
-        x="University_GPA",
-        y="Starting_Salary",
-        hue="GPA_Group",
-        palette="Set2",
-        alpha=0.7,
-        ax=ax
-    )
+    for group in gpa_labels:
+        sub_df = filtered_df[filtered_df["GPA_Group"] == group]
+        if not sub_df.empty:
+            ax.scatter(
+                sub_df["University_GPA"],
+                sub_df["Starting_Salary"],
+                label=group,
+                marker=marker_map[group],
+                alpha=0.7,
+                s=80  # size of markers
+            )
+
     ax.set_xlabel("University GPA")
     ax.set_ylabel("Starting Salary")
     ax.grid(True)
+    ax.legend(title="GPA Group")
     st.pyplot(fig)
 
 else:
