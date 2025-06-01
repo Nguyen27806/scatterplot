@@ -10,53 +10,38 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 if uploaded_file:
     df = pd.read_excel(uploaded_file, sheet_name="education_career_success")
 
-    # GPA grouping
-    gpa_labels = ["2.0–2.5", "2.5–3.0", "3.0–3.5", "3.5–4.0"]
+    # Group GPA
     df["GPA_Group"] = pd.cut(
         df["University_GPA"],
         bins=[2.0, 2.5, 3.0, 3.5, 4.0],
-        labels=gpa_labels,
+        labels=["2.0–2.5", "2.5–3.0", "3.0–3.5", "3.5–4.0"],
         include_lowest=True
     )
 
-    # UI filters
-    selected_gpa = st.selectbox("Select GPA Group", ["All"] + gpa_labels)
+    selected_gpa = st.selectbox("Select GPA Group", ["All"] + df["GPA_Group"].cat.categories.tolist())
     salary_min, salary_max = int(df["Starting_Salary"].min()), int(df["Starting_Salary"].max())
     salary_range = st.slider("Select Starting Salary Range", salary_min, salary_max, (salary_min, salary_max), 1000)
 
-    # Filter data
-    filtered_df = df[df["Starting_Salary"].between(*salary_range)]
+    # Filter
+    mask = (df["Starting_Salary"].between(*salary_range))
     if selected_gpa != "All":
-        filtered_df = filtered_df[filtered_df["GPA_Group"] == selected_gpa]
-
-    # Marker styles per GPA group
-    marker_map = {
-        "2.0–2.5": "o",   # circle
-        "2.5–3.0": "s",   # square
-        "3.0–3.5": "D",   # diamond
-        "3.5–4.0": "^",   # triangle
-    }
-
-    # Set background style to match the image
-    plt.style.use("seaborn-v0_8-whitegrid")
+        mask &= (df["GPA_Group"] == selected_gpa)
+    filtered_df = df[mask]
 
     # Plot
     fig, ax = plt.subplots(figsize=(8, 6))
-    for group in gpa_labels:
-        sub_df = filtered_df[filtered_df["GPA_Group"] == group]
-        if not sub_df.empty:
-            ax.scatter(
-                sub_df["University_GPA"],
-                sub_df["Starting_Salary"],
-                label=group,
-                marker=marker_map[group],
-                alpha=0.7,
-                s=80
-            )
+    sns.regplot(x='University_GPA', y='Starting_Salary', data=filtered_df, ax=ax, scatter_kws={'alpha': 0.7})
+    ax.set_xlabel('University GPA')
+    ax.set_ylabel('Starting Salary')
 
-    ax.set_xlabel("University GPA")
-    ax.set_ylabel("Starting Salary")
-    ax.legend(title="GPA Group")
+    # Customize background and grid to match the uploaded image
+    fig.patch.set_facecolor('#eaf0f7')  # Light gray-blue background
+    ax.set_facecolor('#eaf0f7')
+    ax.grid(True, color='white', linewidth=2)  # White grid lines, thick
+    ax.set_axisbelow(True)
+    ax.set_xticks([2.0, 2.5, 3.0, 3.5, 4.0])  # Consistent vertical grid
+    ax.set_yticks(range(salary_min, salary_max + 1000, 5000))  # Horizontal grid every 5000
+
     st.pyplot(fig)
 
 else:
