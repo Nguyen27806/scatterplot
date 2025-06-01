@@ -153,12 +153,12 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
         )
 
         fig_area.update_layout(
-    hovermode='x', 
-    spikedistance=0, 
+    hovermode='x',
+    spikedistance=-1,
     xaxis=dict(
         showspikes=True,
-        spikemode='toaxis',       
-        spikesnap='data',         
+        spikemode='toaxis',      
+        spikesnap='cursor',       
         showline=True,
         spikethickness=1,
         spikecolor="gray",
@@ -167,6 +167,8 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
     yaxis=dict(
         showspikes=False  
     )
+)
+
 )
 
         col1, col2 = st.columns(2)
