@@ -67,21 +67,21 @@ with st.expander("🌞 Career Path Sunburst", expanded=True):
         'Mathematics': '#0a70a9'
     }
 
-    color_map = {}
-    for field, color in yes_colors.items():
-       'Yes<br>{:.2f}%'.format(round(ent_totals['Yes'] / total_count * 100, 2)): '#FFA500',
-    'No<br>{:.2f}%'.format(round(ent_totals['No'] / total_count * 100, 2)): '#FFA700'
+   color_map = {
+    yes_label: '#FFD700',
+    no_label: '#FFD700'
+}
 
 
     fig1 = px.sunburst(
-        sunburst_data,
-        path=['Ent_Label', 'Field_Label', 'Salary_Label'],
-        values='Count',
-        color='Ent_Field',
-        color_discrete_map=color_map,
-        custom_data=['Percentage'],
-        title='Career Path Insights: Education, Salary & Entrepreneurship'
-    )
+    sunburst_data,
+    path=['Ent_Label', 'Field_Label', 'Salary_Label'],
+    values='Count',
+    color='Ent_Label', 
+    color_discrete_map=color_map,
+    custom_data=['Percentage'],
+    title='Career Path Insights: Education, Salary & Entrepreneurship'
+)
 
     fig1.update_traces(
         insidetextorientation='radial',
