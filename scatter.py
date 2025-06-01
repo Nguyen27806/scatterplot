@@ -175,13 +175,6 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
             )
         )
 
-        for status in ['Yes', 'No']:
-            avg_age = data[data['Entrepreneurship'] == status]['Age'].mean()
-            fig_area.add_vline(x=avg_age, line_dash="dot", line_color=color_map[status], line_width=1.2)
-            fig_area.add_trace(go.Scatter(x=[None], y=[None], mode='markers',
-                                          marker=dict(symbol='circle', size=10, color=color_map[status]),
-                                          name=f"{status} Avg Age: {avg_age:.1f}"))
-
         col1, col2 = st.columns(2)
         with col1:
             st.plotly_chart(fig_bar, use_container_width=True)
