@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 
 st.title("🎓 University GPA vs. Starting Salary")
 
-uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
-
 if uploaded_file:
     df = pd.read_excel(uploaded_file, sheet_name="education_career_success")
 
@@ -34,7 +32,6 @@ if uploaded_file:
     ax.set_xlabel('University GPA')
     ax.set_ylabel('Starting Salary')
 
-    # Customize background and grid to match the uploaded image
     fig.patch.set_facecolor('#eaf0f7')  # Light gray-blue background
     ax.set_facecolor('#eaf0f7')
     ax.grid(True, color='white', linewidth=2)  # White grid lines, thick
@@ -46,3 +43,6 @@ if uploaded_file:
 
 else:
     st.warning("Please upload a valid Excel file with a sheet named 'education_career_success'.")
+
+
+
