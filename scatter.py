@@ -169,8 +169,6 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
     )
 )
 
-)
-
         col1, col2 = st.columns(2)
         with col1:
             st.plotly_chart(fig_bar, use_container_width=True)
