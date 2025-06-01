@@ -9,6 +9,9 @@ if uploaded_file:
 def load_data():
     return pd.read_excel("education_career_success.xlsx", sheet_name=0)
 
+df = load_data()
+
+
     # Group GPA
     df["GPA_Group"] = pd.cut(
         df["University_GPA"],
