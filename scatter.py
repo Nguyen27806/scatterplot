@@ -145,7 +145,7 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
         fig_bar.update_layout(margin=dict(t=40, l=40, r=40, b=40), xaxis_tickangle=90, bargap=0.1)
         fig_bar.update_yaxes(tickformat=".0%")
 
-        # === Area Chart with spike/hover enhancements ===
+
         fig_area = px.area(
             data, x='Age', y='Count', color='Entrepreneurship', markers=True,
             color_discrete_map=color_map, height=400, width=chart_width,
@@ -153,27 +153,21 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
         )
 
         fig_area.update_layout(
-            hovermode='x',
-            spikedistance=-1,
-            xaxis=dict(
-                showspikes=True,
-                spikemode='across',
-                spikesnap='cursor',
-                showline=True,
-                spikethickness=1,
-                spikecolor="gray",
-                spikedash="dot"
-            ),
-            yaxis=dict(
-                showspikes=True,
-                spikemode='across',
-                spikesnap='cursor',
-                showline=True,
-                spikethickness=1,
-                spikecolor="gray",
-                spikedash="dot"
-            )
-        )
+    hovermode='x', 
+    spikedistance=0, 
+    xaxis=dict(
+        showspikes=True,
+        spikemode='toaxis',       
+        spikesnap='data',         
+        showline=True,
+        spikethickness=1,
+        spikecolor="gray",
+        spikedash="dot"
+    ),
+    yaxis=dict(
+        showspikes=False  
+    )
+)
 
         col1, col2 = st.columns(2)
         with col1:
