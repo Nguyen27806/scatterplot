@@ -67,22 +67,27 @@ with st.expander("🌞 Career Path Sunburst", expanded=True):
         'Mathematics': '#0a70a9'
     }
 
-    yes_label = f"Yes<br>{round(ent_totals['Yes'] / total_count * 100, 2)}%"
-    no_label = f"No<br>{round(ent_totals['No'] / total_count * 100, 2)}%"
-    color_map = {
-        yes_label: '#FFD700',
-        no_label: '#FFD700'
-    }
+    # Chỉ áp màu cho Ent_Field (Yes/No + Field)
+    color_map = {}
+    for field, color in yes_colors.items():
+        color_map[f"Yes - {field}"] = color
+    for field, color in no_colors.items():
+        color_map[f"No - {field}"] = color
 
     fig1 = px.sunburst(
-    sunburst_data,
-    path=['Ent_Label', 'Field_Label', 'Salary_Label'],
-    values='Count',
-    color='Ent_Label', 
-    color_discrete_map=color_map,
-    custom_data=['Percentage'],
-    title='Career Path Insights: Education, Salary & Entrepreneurship'
-)
+        sunburst_data,
+        path=['Ent_Label', 'Field_Label', 'Salary_Label'],
+        values='Count',
+        color='Ent_Field',
+        color_discrete_map=color_map,
+        custom_data=['Percentage'],
+        title='Career Path Insights: Education, Salary & Entrepreneurship'
+    )
+
+    # Override màu cho vòng Yes/No
+    for i, label in enumerate(fig1.data[0]['labels']):
+        if label.startswith("Yes<br") or label.startswith("No<br"):
+            fig1.data[0]['marker']['colors'][i] = '#FFD700'
 
     fig1.update_traces(
         insidetextorientation='radial',
