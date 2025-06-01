@@ -197,11 +197,10 @@ with st.expander("🎓 GPA vs. Starting Salary", expanded=True):
     filtered_df = df[mask]
 
     fig3 = px.scatter(
-        filtered_df, x="University_GPA", y="Starting_Salary",
-        trendline="ols", opacity=0.7,
-        title="GPA vs. Starting Salary"
-    )
-    fig3.data[1].line.color = '#FFA500'
+    filtered_df, x="University_GPA", y="Starting_Salary",
+    opacity=0.7,
+    title="GPA vs. Starting Salary"
+)
     fig3.data[0].marker.color = '#00BFFF'
     fig3.update_layout(height=700)
     st.plotly_chart(fig3, use_container_width=True)
