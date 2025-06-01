@@ -67,12 +67,12 @@ with st.expander("🌞 Career Path Sunburst", expanded=True):
         'Mathematics': '#0a70a9'
     }
 
-   yes_label = ...
-no_label = ...
-color_map = {
-    yes_label: '#FFD700',
-    no_label: '#FFD700'
-}
+    yes_label = f"Yes<br>{round(ent_totals['Yes'] / total_count * 100, 2)}%"
+    no_label = f"No<br>{round(ent_totals['No'] / total_count * 100, 2)}%"
+    color_map = {
+        yes_label: '#FFD700',
+        no_label: '#FFD700'
+    }
 
     fig1 = px.sunburst(
     sunburst_data,
