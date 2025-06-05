@@ -221,7 +221,7 @@ with st.expander("⚖️ Work-Life Balance by Promotion Time", expanded=True):
                 hovertemplate=f"%{{y:.2f}}"
             ))
 
-    fig4.update_layout(
+    fig4.update_layout()
         title="Average Work-Life Balance by Years to Promotion",
         xaxis_title="Years to Promotion",
         yaxis_title="Average Work-Life Balance",
