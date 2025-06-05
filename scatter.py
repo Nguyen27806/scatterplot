@@ -142,106 +142,59 @@ with st.expander("📊 Entrepreneurship by Age & Job Level", expanded=True):
             continue
 
         ages = sorted(data['Age'].unique())
-        font_size = {1: 20, 2: 18, 3: 16, 4: 14, 5: 12}.get(len(ages), 10)
         chart_width = max(400, min(1200, 50 * len(ages) + 100))
 
         fig_bar = px.bar(
-            data, x='Age', y='Percentage', color='Entrepreneurship', barmode='stack',
-            color_discrete_map=color_map, height=400, width=chart_width,
+            data,
+            x='Age',
+            y='Percentage',
+            color='Entrepreneurship',
+            barmode='stack',
+            color_discrete_map=color_map,
+            height=450,
+            width=chart_width,
             title=f"{level} Level – Entrepreneurship by Age (%)"
         )
-        fig_bar.update_layout(margin=dict(t=40, l=40, r=40, b=40), xaxis_tickangle=90, bargap=0.1)
-        fig_bar.update_yaxes(tickformat=".0%")
 
+        # Add percentage text annotations
+        for status in ['Yes', 'No']:
+            subset = data[data['Entrepreneurship'] == status]
+            for _, row in subset.iterrows():
+                y_pos = row['Percentage'] / 2 if status == 'No' else 1 - (row['Percentage'] / 2)
+                fig_bar.add_annotation(
+                    x=row['Age'],
+                    y=y_pos,
+                    text=f"{row['Percentage']:.0%}",
+                    showarrow=False,
+                    font=dict(color="white", size=12),
+                    xanchor="center",
+                    yanchor="middle"
+                )
+
+        fig_bar.update_layout(
+            margin=dict(t=40, l=40, r=40, b=40),
+            xaxis_tickangle=90,
+            bargap=0.1,
+            yaxis_tickformat=".0%",
+            yaxis_title="Percentage",
+            legend_title_text="Entrepreneurship"
+        )
 
         fig_area = px.area(
             data, x='Age', y='Count', color='Entrepreneurship', markers=True,
-            color_discrete_map=color_map, height=400, width=chart_width,
+            color_discrete_map=color_map, height=450, width=chart_width,
             title=f"{level} Level – Entrepreneurship by Age (Count)"
         )
-
         fig_area.update_layout(
-    hovermode='x',
-    spikedistance=-1,
-    xaxis=dict(
-        showspikes=True,
-        spikemode='toaxis',      
-        spikesnap='cursor',       
-        showline=True,
-        spikethickness=1,
-        spikecolor="gray",
-        spikedash="dot"
-    ),
-    yaxis=dict(
-        showspikes=False  
-    )
-)
+            hovermode='x',
+            spikedistance=-1,
+            xaxis=dict(showspikes=True, spikemode='toaxis', spikesnap='cursor'),
+            yaxis=dict(showspikes=False),
+            legend_title_text="Entrepreneurship"
+        )
 
         col1, col2 = st.columns(2)
         with col1:
             st.plotly_chart(fig_bar, use_container_width=True)
         with col2:
             st.plotly_chart(fig_area, use_container_width=True)
-
-
-# === SECTION 3: GPA vs. Salary Scatter Plot ===
-with st.expander("🎓 GPA vs. Starting Salary", expanded=True):
-    df["GPA_Group"] = pd.cut(df["University_GPA"], bins=[2.0, 2.5, 3.0, 3.5, 4.0],
-                             labels=["2.0–2.5", "2.5–3.0", "3.0–3.5", "3.5–4.0"], include_lowest=True)
-
-    selected_gpa = st.selectbox("Select GPA Group", ["All"] + df["GPA_Group"].cat.categories.tolist())
-    salary_min, salary_max = int(df["Starting_Salary"].min()), int(df["Starting_Salary"].max())
-    salary_range = st.slider("Select Starting Salary Range", salary_min, salary_max, (salary_min, salary_max), 1000)
-
-    mask = df["Starting_Salary"].between(*salary_range)
-    if selected_gpa != "All":
-        mask &= (df["GPA_Group"] == selected_gpa)
-    filtered_df = df[mask]
-
-    fig3 = px.scatter(
-    filtered_df, x="University_GPA", y="Starting_Salary",
-    opacity=0.7,
-    title="GPA vs. Starting Salary"
-)
-    fig3.data[0].marker.color = '#00BFFF'
-    fig3.update_layout(height=700)
-    st.plotly_chart(fig3, use_container_width=True)
-
-# === SECTION 4: Work-Life Balance Line Chart ===
-with st.expander("⚖️ Work-Life Balance by Promotion Time", expanded=True):
-    avg_balance = df.groupby(['Current_Job_Level', 'Years_to_Promotion'])['Work_Life_Balance'].mean().reset_index()
-    job_levels_order = ['Entry', 'Mid', 'Senior', 'Executive']
-    avg_balance['Current_Job_Level'] = pd.Categorical(avg_balance['Current_Job_Level'],
-                                                      categories=job_levels_order, ordered=True)
-
-    selected_levels = st.sidebar.multiselect("Select Job Levels to Display (Work-Life Balance)",
-                                             options=job_levels_order + ["All"], default=["All"])
-    if "All" in selected_levels or not selected_levels:
-        filtered_data = avg_balance
-    else:
-        filtered_data = avg_balance[avg_balance["Current_Job_Level"].isin(selected_levels)]
-
-    fig4 = go.Figure()
-    colors = {"Entry": "#1f77b4", "Mid": "#ff7f0e", "Senior": "#2ca02c", "Executive": "#d62728"}
-
-    for level in job_levels_order:
-        if "All" in selected_levels or level in selected_levels:
-            data_level = filtered_data[filtered_data["Current_Job_Level"] == level]
-            fig4.add_trace(go.Scatter(
-                x=data_level["Years_to_Promotion"],
-                y=data_level["Work_Life_Balance"],
-                mode="lines+markers",
-                name=level,
-                line=dict(color=colors[level]),
-                hovertemplate=f"%{{y:.2f}}"
-            ))
-
-    fig4.update_layout(
-        title="Average Work-Life Balance by Years to Promotion",
-        xaxis_title="Years to Promotion",
-        yaxis_title="Average Work-Life Balance",
-        height=600,
-        legend_title_text="Job Level",
-        hovermode="x unified"
-    )
-    st.plotly_chart(fig4, use_container_width=True)
