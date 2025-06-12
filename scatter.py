@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 # Load and preprocess data
-df = pd.read_csv('education_career_success.csv')
+return pd.read_excel("education_career_success.xlsx", sheet_name=0)
 df = df[df['Entrepreneurship'].isin(['Yes', 'No'])]
 df = df[df['Gender'].notna()]  # loại bỏ dòng thiếu giới tính nếu có
 
