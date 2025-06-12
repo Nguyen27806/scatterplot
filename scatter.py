@@ -1,102 +1,45 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 
-# Load dữ liệu
-@st.cache_data
-def load_data():
-    return pd.read_excel("education_career_success.xlsx", sheet_name=0)
+# Load and preprocess data
+df = pd.read_csv('education_career_success.csv')
+df = df[df['Entrepreneurship'].isin(['Yes', 'No'])]
+df = df[df['Gender'].notna()]  # loại bỏ dòng thiếu giới tính nếu có
 
-df = load_data()
+# Sidebar filter for Job Level
+st.sidebar.title("Filters")
+job_levels = sorted(df['Current_Job_Level'].dropna().unique())
+selected_level = st.sidebar.selectbox("Select Job Level for Heatmap", job_levels)
 
-# Sidebar: chọn Job Level
-job_levels_order = ['Entry', 'Mid', 'Senior', 'Executive']
-selected_levels = st.sidebar.multiselect(
-    "Select Job Levels to Display",
-    options=job_levels_order + ["All"],
-    default=["All"]
+# Filter theo Job Level
+df_filtered = df[df['Current_Job_Level'] == selected_level]
+
+# Tính tỷ lệ khởi nghiệp theo Age và Gender
+heat_df = (
+    df_filtered.groupby(['Age', 'Gender'])['Entrepreneurship']
+    .apply(lambda x: (x == 'Yes').mean())
+    .reset_index(name='Entrepreneurship_Rate')
 )
 
-# Sidebar: slicer Age
-min_age = int(df["Age"].min())
-max_age = int(df["Age"].max())
-age_range = st.sidebar.slider(
-    "Select Age Range",
-    min_value=min_age,
-    max_value=max_age,
-    value=(min_age, max_age)
+# Vẽ biểu đồ heatmap
+fig_heatmap = px.density_heatmap(
+    heat_df,
+    x='Age',
+    y='Gender',
+    z='Entrepreneurship_Rate',
+    color_continuous_scale='Viridis',
+    title=f'Entrepreneurship Rate by Age and Gender – {selected_level} Level',
+    labels={'Entrepreneurship_Rate': 'Rate of Entrepreneurship'}
 )
 
-# Lọc dữ liệu theo Age
-df_filtered = df[df["Age"].between(age_range[0], age_range[1])]
-
-# Tính trung bình Work-Life Balance theo Job Level và Age
-avg_balance = (
-    df_filtered.groupby(['Current_Job_Level', 'Age'])['Work_Life_Balance']
-    .mean()
-    .reset_index()
+fig_heatmap.update_layout(
+    margin=dict(t=50, l=40, r=40, b=40),
+    xaxis_title='Age',
+    yaxis_title='Gender',
+    coloraxis_colorbar=dict(title="Entrepreneurship Rate", tickformat=".0%")
 )
-
-# Gán thứ tự Job Level để sắp xếp
-avg_balance['Current_Job_Level'] = pd.Categorical(
-    avg_balance['Current_Job_Level'],
-    categories=job_levels_order,
-    ordered=True
-)
-
-# Lọc theo Job Level nếu cần
-if "All" not in selected_levels:
-    avg_balance = avg_balance[avg_balance["Current_Job_Level"].isin(selected_levels)]
-
-# Tạo biểu đồ
-fig = go.Figure()
-
-colors = {
-    "Entry": "#1f77b4",      # blue
-    "Mid": "#ff7f0e",        # orange
-    "Senior": "#2ca02c",     # green
-    "Executive": "#d62728"   # red
-}
-
-for level in job_levels_order:
-    if "All" in selected_levels or level in selected_levels:
-        data_level = avg_balance[avg_balance["Current_Job_Level"] == level]
-        if not data_level.empty:
-            fig.add_trace(go.Scatter(
-                x=data_level["Age"],
-                y=data_level["Work_Life_Balance"],
-                mode="lines+markers",
-                name=level,
-                line=dict(color=colors[level]),
-                hovertemplate="%{y:.2f}<extra></extra>"
-            ))
-
-# Layout
-fig.update_layout(
-    title="Average Work-Life Balance by Age",
-    xaxis_title="Age",
-    yaxis_title="Average Work-Life Balance",
-    height=600,
-    width=900,
-    title_x=0.5,
-    legend_title_text="Job Level",
-    hovermode="x unified",
-    xaxis=dict(
-        showspikes=True,
-        spikemode="across",
-        spikesnap="cursor",
-        spikedash="dot",
-        spikethickness=1,
-        spikecolor="gray"
-    ),
-    yaxis=dict(
-        showspikes=True,
-        spikemode="across",
-        spikesnap="cursor",
-        spikethickness=1,
-        spikecolor="gray"
-    )
-)
+fig_heatmap.update_traces(contours_coloring="none")
 
 # Hiển thị biểu đồ
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig_heatmap, use_container_width=True)
